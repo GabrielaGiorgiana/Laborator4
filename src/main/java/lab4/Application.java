@@ -1,63 +1,89 @@
 package lab4;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 public class Application {
     public static void main(String[] args) {
+        String fisierStudenti = "studenti_in.txt";
+        String fisierNote = "note_anon.txt";
 
 
-        HashMap<String, Integer> varste = new HashMap<>();
-        varste.put("Ioan", 21);
-        varste.put("Maria", 22);
-        varste.put("Victor", 20);
-        varste.put("Simina", 20);
-        varste.put("Marius", 21);
-        varste.put("Mihai", 21);
-        varste.put("Daniela", 23);
-
-        Map<String, String> adrese = new HashMap<>();
-
-        adrese.put("Ioan", "Sibiu");
-        adrese.put("Maria", "Bucuresti");
-        adrese.put("Victor", "Cluj");
-        adrese.put("Simina", "Alba-Iulia");
-        adrese.put("Marius", "Medias");
-        adrese.put("Mihai", "Cisnadie");
-        adrese.put("Daniela", "Sibiu");
+        Map<Integer, Student> mapaStudenti = new HashMap<>();
 
 
-        System.out.println("--- Varste initiale ---");
-        System.out.println(varste);
+        try (BufferedReader br = new BufferedReader(new FileReader(fisierStudenti))) {
+            String linie;
+            while ((linie = br.readLine()) != null) {
+                if (linie.trim().isEmpty()) continue;
+                String[] date = linie.split(",");
+                int matricol = Integer.parseInt(date[0].trim());
+                String prenume = date[1].trim();
+                String nume = date[2].trim();
+                String grupa = date[3].trim();
 
-        varste.put("Vlad", 19);
-        varste.put("Iulia", 19);
-
-        System.out.println("\n--- Varste dupa adaugare (Vlad si Iulia) ---");
-        System.out.println(varste);
-        System.out.println("--------------------------------------------------");
-
-
-        HashMap<String, Tanar> tineri = new HashMap<>();
-
-
-        for (String prenume : varste.keySet()) {
-            int varsta = varste.get(prenume);
-
-
-            String adresa = adrese.getOrDefault(prenume, "Necunoscuta");
-
-
-            Tanar tanarNou = new Tanar(prenume, varsta, adresa);
-
-
-            tineri.put(prenume, tanarNou);
+                Student s = new Student(matricol, prenume, nume, grupa);
+                mapaStudenti.put(matricol, s);
+            }
+        } catch (IOException e) {
+            System.err.println("Eroare la citirea studenților: " + e.getMessage());
+            return;
         }
 
 
-        System.out.println("\n--- Continutul mapei 'tineri' (O(1) lookups combinat) ---");
-        for (Map.Entry<String, Tanar> entry : tineri.entrySet()) {
-            System.out.println("Cheie: " + entry.getKey() + " -> Valoare: " + entry.getValue());
+        try (BufferedReader br = new BufferedReader(new FileReader(fisierNote))) {
+            String linie;
+            while ((linie = br.readLine()) != null) {
+                if (linie.trim().isEmpty()) continue;
+                String[] date = linie.split(",");
+                int matricol = Integer.parseInt(date[0].trim());
+                double notaObtinuta = Double.parseDouble(date[1].trim());
+
+                Student studentGasit = mapaStudenti.get(matricol);
+                if (studentGasit != null) {
+                    studentGasit.setNota(notaObtinuta);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Eroare la citirea notelor: " + e.getMessage());
+            return;
         }
+
+
+        System.out.println("--- Testare cautare nota in O(1) ---");
+
+        float notaM = gasesteNota("Bianca", "Popescu", mapaStudenti);
+        System.out.println("notaM pentru Bianca Popescu = " + notaM);
+
+
+        float notaN = gasesteNota("Ioan", "Popa", mapaStudenti);
+        System.out.println("notaN pentru Ioan Popa = " + notaN);
+    }
+
+
+
+    public static float gasesteNota(String prenume, String nume, Map<Integer, Student> tineri) {
+
+        Map<String, Student> mapaNume = new HashMap<>();
+
+
+        for (Student s : tineri.values()) {
+
+            String cheieUnica = (s.getPrenume() + "-" + s.getNume()).toLowerCase();
+            mapaNume.put(cheieUnica, s);
+        }
+
+
+        String cheieCautata = (prenume + "-" + nume).toLowerCase();
+
+
+        Student studentGasit = mapaNume.get(cheieCautata);
+
+
+        if (studentGasit != null) {
+            return (float) studentGasit.getNota();
+        }
+
+        return 0.0f;
     }
 }
